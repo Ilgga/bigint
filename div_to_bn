@@ -1,0 +1,97 @@
+int bn_div_to(bn *t, bn const *right){	
+	if (t->sign^right->sign){
+		t->sign = 0;
+	} else {
+		t->sign = 1;
+		}
+	if (right->r_s ==1){
+		if (right->d[0] ==1){
+			return 0;
+		} else if (right->d[0] ==0){
+			t->sign = 1;
+			t->size = 2;
+			t->r_s = 1;
+			t->d = realloc(t->d,t->size*sizeof(*t->d));
+			t->d[0]=0;
+			return 0;
+			}	
+		}
+	int h;
+	if((h=bn_abs_cmp(t,right))<=0){
+		t->size = 2;
+		t->r_s = 1;
+		t->d = realloc(t->d,t->size*sizeof(*t->d));
+		t->d[0] = 0;
+		if (h ==0){
+			t->d[0] = 1;
+			}
+		return 0;
+		}
+	bn * proto_t = bn_init(t);
+	bn *rez = bn_new();
+	rez->size = t->size+1;
+	rez->r_s = 0;
+	free(rez->d);
+	rez->d =NULL;
+	rez->d = (int*)calloc(rez->size,sizeof(*rez->d));
+	bn * cur = bn_init(rez);
+	cur->r_s = 0;
+	bn * prom = bn_init(rez);
+	int x,l,r,m;
+	long long i;
+	 for (i = t->r_s - 1; i >= 0; --i) {		
+		move(cur); // cur*base
+		cur->d[0] = t->d[i];             
+		x = 0;
+		l = 0;
+		r = base;
+		if((bn_abs_cmp(cur,right))<0){
+			r=-1;	
+			}	      
+		while (l <= r) {
+			m = (l + r) / 2;
+			multiple_int_bn(prom,right,m);										
+			if((bn_abs_cmp(cur,prom))>=0){					
+				 x = m;					
+				 l = m + 1;                   
+			}else {r = m - 1;
+				}
+			}
+			multiple_int_bn(prom,right,x);
+			rez->d[i] = x;
+			++rez->r_s;																		
+			bn_sub_to(cur,prom);			
+			while(cur->r_s>0 && cur->d[cur->r_s-1]==0){--cur->r_s;}					   	                     
+			}			
+    bn_delete(prom);
+    bn_delete(cur);
+    free(t->d);
+    if (rez->r_s ==0){
+		rez->r_s = 1;
+		}
+    t->r_s = rez->r_s;
+    t ->d = rez->d;
+    rez->d = NULL;
+    bn_delete(rez);	
+    if(t->sign ==0){
+		rez = bn_mul(t,right);
+		if(bn_abs_cmp(rez,proto_t)<0){
+			add_int(t,1);
+			}
+		bn_delete(rez);	
+		}
+	bn_delete(proto_t);
+	
+	while(t->d[t->r_s-1] == 0 &&  t->r_s-1 >0){--t->r_s;}
+	if(t->size - t->r_s>1){
+		int *z = calloc((t->r_s+1),sizeof(*z));
+		for(int i =0; i<t->r_s;++i){
+			z[i] = t->d[i];
+			}
+		free(t->d);
+		t->d = z;
+		t->size = t->r_s+1;
+		}
+		
+     return 0;
+	}
